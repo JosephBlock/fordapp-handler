@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -107,6 +109,11 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.artifact_name }}
           if-no-files-found: error
+
+      - name: Attest build artifact
+        uses: actions/attest@v1
+        with:
+          subject-path: dist/${{ matrix.artifact_name }}
 
   publish:
     name: Publish Release
