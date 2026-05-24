@@ -111,7 +111,7 @@ jobs:
           if-no-files-found: error
 
       - name: Attest build artifact
-        uses: actions/attest@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: dist/${{ matrix.artifact_name }}
 
