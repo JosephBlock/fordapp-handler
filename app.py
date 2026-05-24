@@ -7,7 +7,8 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox, filedialog
 
-PROTOCOL = "fordapp"
+PROTOCOLS = ["fordapp", "lincolnapp"]
+PROTOCOL = PROTOCOLS[0]  # for backward compatibility
 TEMP_REGISTRATION = False
 
 def register_windows(exe_path=None):
@@ -15,13 +16,14 @@ def register_windows(exe_path=None):
         exe_path = os.path.abspath(sys.argv[0])
     import winreg
     command = f'"{exe_path}" "%1"'
-    key_path = rf"Software\Classes\{PROTOCOL}"
     try:
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
-            winreg.SetValue(key, "", winreg.REG_SZ, f"URL:{PROTOCOL} Protocol")
-            winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
-            with winreg.CreateKey(key, r"shell\\open\\command") as command_key:
-                winreg.SetValue(command_key, "", winreg.REG_SZ, command)
+        for proto in PROTOCOLS:
+            key_path = rf"Software\Classes\{proto}"
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                winreg.SetValue(key, "", winreg.REG_SZ, f"URL:{proto} Protocol")
+                winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
+                with winreg.CreateKey(key, r"shell\\open\\command") as command_key:
+                    winreg.SetValue(command_key, "", winreg.REG_SZ, command)
         return True
     except Exception as e:
         messagebox.showerror("Registry Error", str(e))
@@ -29,7 +31,6 @@ def register_windows(exe_path=None):
 
 def unregister_windows(silent=False):
     import winreg
-    key_path = rf"Software\Classes\{PROTOCOL}"
     
     def delete_key_recursive(key, path):
         try:
@@ -43,7 +44,9 @@ def unregister_windows(silent=False):
             pass
             
     try:
-        delete_key_recursive(winreg.HKEY_CURRENT_USER, key_path)
+        for proto in PROTOCOLS:
+            key_path = rf"Software\Classes\{proto}"
+            delete_key_recursive(winreg.HKEY_CURRENT_USER, key_path)
         return True
     except Exception as e:
         if not silent:
@@ -53,14 +56,15 @@ def unregister_windows(silent=False):
 def register_linux(exe_path=None):
     if exe_path is None:
         exe_path = os.path.abspath(sys.argv[0])
+    mimetypes = ";".join([f"x-scheme-handler/{proto}" for proto in PROTOCOLS]) + ";"
     desktop_file = f"""[Desktop Entry]
-Name=FordApp Handler
+Name=Ford/Lincoln App Handler
 Exec={exe_path} %u
 Type=Application
 Terminal=false
-MimeType=x-scheme-handler/{PROTOCOL};
+MimeType={mimetypes}
 """
-    desktop_path = os.path.expanduser(f"~/.local/share/applications/{PROTOCOL}-handler.desktop")
+    desktop_path = os.path.expanduser(f"~/.local/share/applications/fordapp-handler.desktop")
     
     try:
         os.makedirs(os.path.dirname(desktop_path), exist_ok=True)
@@ -68,7 +72,8 @@ MimeType=x-scheme-handler/{PROTOCOL};
             f.write(desktop_file)
         
         # Update MIME database
-        os.system(f"xdg-mime default {PROTOCOL}-handler.desktop x-scheme-handler/{PROTOCOL}")
+        for proto in PROTOCOLS:
+            os.system(f"xdg-mime default fordapp-handler.desktop x-scheme-handler/{proto}")
         os.system("update-desktop-database ~/.local/share/applications")
         return True
     except Exception as e:
@@ -76,7 +81,7 @@ MimeType=x-scheme-handler/{PROTOCOL};
         return False
 
 def unregister_linux(silent=False):
-    desktop_path = os.path.expanduser(f"~/.local/share/applications/{PROTOCOL}-handler.desktop")
+    desktop_path = os.path.expanduser(f"~/.local/share/applications/fordapp-handler.desktop")
     try:
         if os.path.exists(desktop_path):
             os.remove(desktop_path)
@@ -124,27 +129,38 @@ def check_registration_status():
     """Returns (is_registered, registered_path)"""
     if sys.platform == 'win32':
         import winreg
-        key_path = rf"Software\Classes\{PROTOCOL}\shell\open\command"
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
-                val = winreg.QueryValue(key, "")
-                match = re.match(r'"([^"]+)"', val)
-                if match:
-                    path = match.group(1)
-                else:
-                    path = val.split()[0] if val else ""
+        registered_paths = {}
+        for proto in PROTOCOLS:
+            key_path = rf"Software\Classes\{proto}\shell\open\command"
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                    val = winreg.QueryValue(key, "")
+                    match = re.match(r'"([^"]+)"', val)
+                    if match:
+                        path = match.group(1)
+                    else:
+                        path = val.split()[0] if val else ""
+                    
+                    if os.path.exists(path):
+                        registered_paths[proto] = path
+            except FileNotFoundError:
+                pass
+            except Exception as e:
+                return False, f"Error checking {proto}: {str(e)}"
                 
-                if os.path.exists(path):
-                    return True, path
-                else:
-                    return False, f"Broken link (points to non-existent {path})"
-        except FileNotFoundError:
+        if len(registered_paths) == len(PROTOCOLS):
+            paths_set = set(registered_paths.values())
+            if len(paths_set) == 1:
+                return True, list(paths_set)[0]
+            else:
+                return True, f"Partially configured (Ford: {registered_paths.get('fordapp')}, Lincoln: {registered_paths.get('lincolnapp')})"
+        elif len(registered_paths) > 0:
+            return False, f"Partially registered: {', '.join(registered_paths.keys())}"
+        else:
             return False, "Not registered"
-        except Exception as e:
-            return False, f"Error: {str(e)}"
             
     elif sys.platform == 'linux':
-        desktop_path = os.path.expanduser(f"~/.local/share/applications/{PROTOCOL}-handler.desktop")
+        desktop_path = os.path.expanduser(f"~/.local/share/applications/fordapp-handler.desktop")
         if os.path.exists(desktop_path):
             try:
                 with open(desktop_path, 'r') as f:
@@ -372,7 +388,12 @@ def make_button_interactive(btn, bg_normal, bg_hover, fg_normal, fg_hover):
 
 def show_url_gui(url):
     root = tk.Tk()
-    root.title(f"{PROTOCOL.capitalize()} URL Handler")
+    proto_received = "Ford/Lincoln"
+    for proto in PROTOCOLS:
+        if url.startswith(f"{proto}://"):
+            proto_received = proto.capitalize()
+            break
+    root.title(f"{proto_received} URL Handler")
     root.configure(bg="#1e1e2e")
     center_window(root, 600, 170)
     root.resizable(False, False)
@@ -429,7 +450,7 @@ def show_url_gui(url):
 
 def show_setup_gui():
     root = tk.Tk()
-    root.title(f"{PROTOCOL.capitalize()} Protocol Handler Setup")
+    root.title("Ford/Lincoln Protocol Handler Setup")
     root.configure(bg="#1e1e2e")
     center_window(root, 550, 460)
     root.resizable(False, False)
@@ -440,7 +461,7 @@ def show_setup_gui():
     
     tk.Label(
         header_frame, 
-        text=f"{PROTOCOL.upper()} Protocol Handler Setup", 
+        text="Ford/Lincoln Protocol Handler Setup", 
         font=("Segoe UI", 14, "bold"), 
         bg="#252538", 
         fg="#89b4fa"
@@ -450,9 +471,9 @@ def show_setup_gui():
     desc_frame.pack(padx=25, pady=(15, 10), fill=tk.X)
     
     desc_text = (
-        f"This utility registers a custom URI scheme ({PROTOCOL}://) with your system.\n"
-        f"When browser-based authentication redirects to a {PROTOCOL}:// URL, the OS launches\n"
-        f"this handler to automatically copy the authorization token."
+        "This utility registers custom URI schemes (fordapp:// and lincolnapp://) with your system.\n"
+        "When browser-based authentication redirects to either URL, the OS launches\n"
+        "this handler to automatically copy the authorization token."
     )
     tk.Label(
         desc_frame, 
@@ -555,7 +576,8 @@ def show_setup_gui():
             
     def on_test_click():
         try:
-            webbrowser.open(f"{PROTOCOL}://test-connection-successful")
+            webbrowser.open("fordapp://test-connection-successful")
+            webbrowser.open("lincolnapp://test-connection-successful")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to open browser: {str(e)}")
             
@@ -665,7 +687,7 @@ if __name__ == "__main__":
         
     received_url = None
     for arg in sys.argv[1:]:
-        if arg.startswith(f"{PROTOCOL}://"):
+        if any(arg.startswith(f"{proto}://") for proto in PROTOCOLS):
             received_url = arg
             break
             

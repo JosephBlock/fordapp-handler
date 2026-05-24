@@ -1,6 +1,6 @@
-# FordApp Protocol Handler
+# Ford/Lincoln Protocol Handler
 
-A cross-platform application that registers a custom URI scheme (`fordapp://`) with the operating system. When a browser redirects to `fordapp://`, the OS launches this application, captures the URL, and presents a GUI to the user to copy the authorization token/URL.
+A cross-platform application that registers custom URI schemes (`fordapp://` and `lincolnapp://`) with the operating system. When a browser redirects to either URL, the OS launches this application, captures the URL, and presents a GUI to the user to copy the authorization token/URL.
 
 ---
 
@@ -39,7 +39,7 @@ If you prefer to build the executable yourself:
 
 ## 🛠️ Setup & Installation
 
-To make the operating system recognize `fordapp://` URLs, you must install and register the handler.
+To make the operating system recognize `fordapp://` and `lincolnapp://` URLs, you must install and register the handler.
 
 ### Windows
 
@@ -86,7 +86,7 @@ Choose one of the two options in the Setup Wizard:
 ### macOS
 macOS registers URL handlers automatically using the `Info.plist` inside the application bundle.
 1. Move `FordAppHandler.app` to your `/Applications` directory.
-2. Double-click the application once to launch it. macOS will read the plist bundle config and register the `fordapp://` scheme.
+2. Double-click the application once to launch it. macOS will read the plist bundle config and register both the `fordapp://` and `lincolnapp://` schemes.
 
 #### ⚠️ macOS Gatekeeper / Security Warning
 Since the binary is unsigned, macOS may block the app or say it is damaged. You can resolve this by removing the quarantine flag. Open a terminal and run:
@@ -136,7 +136,7 @@ rm -rf /Applications/FordAppHandler.app
 
 ## 📱 How to Use
 
-Once registered, clicking or navigating to any URL starting with `fordapp://` (for example: `fordapp://auth?token=123456`) in your web browser will trigger the application:
+Once registered, clicking or navigating to any URL starting with `fordapp://` or `lincolnapp://` (for example: `fordapp://auth?token=123456` or `lincolnapp://auth?token=123456`) in your web browser will trigger the application:
 
 1. The OS will automatically launch the **FordApp Handler** GUI.
 2. The UI displays the received URL in a text field.

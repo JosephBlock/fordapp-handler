@@ -73,8 +73,8 @@ if sys.platform == 'darwin':
         info_plist={
             'CFBundleURLTypes': [
                 {
-                    'CFBundleURLName': 'FordApp Protocol',
-                    'CFBundleURLSchemes': ['fordapp']
+                    'CFBundleURLName': 'Ford/Lincoln App Protocol',
+                    'CFBundleURLSchemes': ['fordapp', 'lincolnapp']
                 }
             ]
         }
@@ -88,10 +88,10 @@ if os.path.exists(dist_dir):
     # Format executable extension for readme instructions
     exe_display_name = f"{output_name}.exe" if sys.platform == 'win32' else output_name
     
-    readme_content = f"""FordApp Protocol Handler
-========================
+    readme_content = f"""Ford/Lincoln Protocol Handler
+=============================
 
-A helper tool to register and handle the custom URI scheme `fordapp://`.
+A helper tool to register and handle custom URI schemes `fordapp://` and `lincolnapp://`.
 
 Current Build: {output_name}
 
