@@ -30,10 +30,18 @@ jobs:
             arch: x86
             python_arch: x86
             artifact_name: FordAppHandler-windows-x86.exe
+          - os: windows-11-arm
+            arch: arm64
+            python_arch: arm64
+            artifact_name: FordAppHandler-windows-arm64.exe
           - os: ubuntu-latest
             arch: x86_64
             python_arch: x64
             artifact_name: FordAppHandler-linux-x86_64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            python_arch: arm64
+            artifact_name: FordAppHandler-linux-arm64
           - os: macos-latest
             arch: arm64
             artifact_name: FordAppHandler-macos-arm64.zip
@@ -53,7 +61,7 @@ jobs:
           cache: 'pip'
 
       - name: Install system dependencies (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-tk
@@ -70,7 +78,7 @@ jobs:
           pyinstaller fordapp.spec
 
       - name: Prepare Windows artifact
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           # Verify binary has the correct architecture-specific name
@@ -79,7 +87,7 @@ jobs:
           }
 
       - name: Prepare Linux artifact
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           # Verify binary has the correct architecture-specific name
           if [ ! -f "dist/FordAppHandler-linux-${{ matrix.arch }}" ]; then
@@ -88,7 +96,7 @@ jobs:
           fi
 
       - name: Prepare macOS artifact
-        if: matrix.os == 'macos-latest'
+        if: runner.os == 'macOS'
         run: |
           cd dist
           zip -r FordAppHandler-macos-${{ matrix.arch }}.zip FordAppHandler-macos-${{ matrix.arch }}.app
