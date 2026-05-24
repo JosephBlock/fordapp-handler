@@ -1,0 +1,118 @@
+name: Build and Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g. v1.0.0)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: FordAppHandler-windows.exe
+            output_path: dist/FordAppHandler.exe
+          - os: ubuntu-latest
+            artifact_name: FordAppHandler-linux
+            output_path: dist/FordAppHandler
+          - os: macos-latest
+            artifact_name: FordAppHandler-macos.zip
+            output_path: dist/FordAppHandler.app
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller fordapp.spec
+
+      - name: Prepare Windows artifact
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Rename-Item -Path "dist/FordAppHandler.exe" -NewName "FordAppHandler-windows.exe"
+
+      - name: Prepare Linux artifact
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mv dist/FordAppHandler dist/FordAppHandler-linux
+
+      - name: Prepare macOS artifact
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd dist
+          zip -r FordAppHandler-macos.zip FordAppHandler.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Determine tag name
+        id: tag_name
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            echo "TAG=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "TAG=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=v0.0.0-draft-${{ github.run_number }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.tag_name.outputs.TAG }}
+        run: |
+          gh release create "$TAG_NAME" \
+            artifacts/* \
+            --title "Release $TAG_NAME" \
+            --generate-notes \
+            --draft=false
