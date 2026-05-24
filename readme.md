@@ -9,10 +9,18 @@ A cross-platform application that registers a custom URI scheme (`fordapp://`) w
 You can either download a pre-built binary for your platform or build it from source.
 
 ### Option 1: Download Pre-built Binaries
-Download the executable for your platform from the [GitHub Releases](https://github.com/JosephBlock/fordapp-handler/releases) page:
-*   **Windows**: `FordAppHandler-windows.exe`
-*   **Linux**: `FordAppHandler-linux`
-*   **macOS**: `FordAppHandler-macos.zip` (extract to get `FordAppHandler.app`)
+Download the executable for your platform and architecture from the [GitHub Releases](https://github.com/JosephBlock/fordapp-handler/releases) page:
+*   **Windows**:
+    - `FordAppHandler-windows-x86_64.exe` (64-bit Intel/AMD)
+    - `FordAppHandler-windows-x86.exe` (32-bit Intel/AMD)
+    - `FordAppHandler-windows-arm64.exe` (64-bit ARM)
+*   **Linux**:
+    - `FordAppHandler-linux-x86_64` (64-bit Intel/AMD)
+    - `FordAppHandler-linux-x86` (32-bit Intel/AMD)
+    - `FordAppHandler-linux-arm64` (64-bit ARM)
+*   **macOS**:
+    - `FordAppHandler-macos-arm64.zip` (extract to get `FordAppHandler-macos-arm64.app` for Apple Silicon)
+    - `FordAppHandler-macos-x86_64.zip` (extract to get `FordAppHandler-macos-x86_64.app` for Intel Macs)
 
 ### Option 2: Build From Source
 If you prefer to build the executable yourself:

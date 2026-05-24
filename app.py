@@ -20,7 +20,7 @@ def register_windows(exe_path=None):
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
             winreg.SetValue(key, "", winreg.REG_SZ, f"URL:{PROTOCOL} Protocol")
             winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
-            with winreg.CreateKey(key, r"shell\open\command") as command_key:
+            with winreg.CreateKey(key, r"shell\\open\\command") as command_key:
                 winreg.SetValue(command_key, "", winreg.REG_SZ, command)
         return True
     except Exception as e:

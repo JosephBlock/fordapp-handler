@@ -16,21 +16,30 @@ permissions:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
+    name: Build ${{ matrix.arch }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
-            artifact_name: FordAppHandler-windows.exe
-            output_path: dist/FordAppHandler.exe
+            arch: x86_64
+            python_arch: x64
+            artifact_name: FordAppHandler-windows-x86_64.exe
+          - os: windows-latest
+            arch: x86
+            python_arch: x86
+            artifact_name: FordAppHandler-windows-x86.exe
           - os: ubuntu-latest
-            artifact_name: FordAppHandler-linux
-            output_path: dist/FordAppHandler
+            arch: x86_64
+            python_arch: x64
+            artifact_name: FordAppHandler-linux-x86_64
           - os: macos-latest
-            artifact_name: FordAppHandler-macos.zip
-            output_path: dist/FordAppHandler.app
+            arch: arm64
+            artifact_name: FordAppHandler-macos-arm64.zip
+          - os: macos-latest
+            arch: x86_64
+            artifact_name: FordAppHandler-macos-x86_64.zip
 
     steps:
       - name: Check out repository
@@ -40,6 +49,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          architecture: ${{ matrix.python_arch || 'x64' }}
           cache: 'pip'
 
       - name: Install system dependencies (Linux)
@@ -54,6 +64,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
+        env:
+          ARCH: ${{ matrix.arch }}
         run: |
           pyinstaller fordapp.spec
 
@@ -61,18 +73,25 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          Rename-Item -Path "dist/FordAppHandler.exe" -NewName "FordAppHandler-windows.exe"
+          # Verify binary has the correct architecture-specific name
+          if (-not (Test-Path "dist/FordAppHandler-windows-${{ matrix.arch }}.exe")) {
+              throw "Expected build artifact dist/FordAppHandler-windows-${{ matrix.arch }}.exe was not found"
+          }
 
       - name: Prepare Linux artifact
         if: matrix.os == 'ubuntu-latest'
         run: |
-          mv dist/FordAppHandler dist/FordAppHandler-linux
+          # Verify binary has the correct architecture-specific name
+          if [ ! -f "dist/FordAppHandler-linux-${{ matrix.arch }}" ]; then
+              echo "Expected build artifact dist/FordAppHandler-linux-${{ matrix.arch }} was not found"
+              exit 1
+          fi
 
       - name: Prepare macOS artifact
         if: matrix.os == 'macos-latest'
         run: |
           cd dist
-          zip -r FordAppHandler-macos.zip FordAppHandler.app
+          zip -r FordAppHandler-macos-${{ matrix.arch }}.zip FordAppHandler-macos-${{ matrix.arch }}.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
