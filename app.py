@@ -463,33 +463,41 @@ def show_setup_gui():
         justify=tk.LEFT
     ).pack(anchor="w")
     
-    status_frame = tk.LabelFrame(
-        root, 
-        text=" Current System Status ", 
-        font=("Segoe UI", 9, "bold"), 
-        bg="#1e1e2e", 
-        fg="#89b4fa", 
-        bd=1, 
-        relief=tk.SOLID
+    status_frame = tk.Frame(
+        root,
+        bg="#252538",
+        bd=1,
+        relief=tk.SOLID,
+        highlightbackground="#313244",
+        highlightthickness=1
     )
     status_frame.pack(padx=25, pady=10, fill=tk.X)
     
     status_var = tk.StringVar()
     path_var = tk.StringVar()
     
-    status_label = tk.Label(status_frame, textvariable=status_var, font=("Segoe UI", 10, "bold"), bg="#1e1e2e")
-    status_label.pack(anchor="w", padx=15, pady=(8, 2))
+    title_label = tk.Label(
+        status_frame,
+        text="CURRENT SYSTEM STATUS",
+        font=("Segoe UI", 8, "bold"),
+        bg="#252538",
+        fg="#89b4fa"
+    )
+    title_label.pack(anchor="w", padx=15, pady=(10, 2))
+    
+    status_label = tk.Label(status_frame, textvariable=status_var, font=("Segoe UI", 10, "bold"), bg="#252538")
+    status_label.pack(anchor="w", padx=15, pady=(2, 2))
     
     path_label = tk.Label(
         status_frame, 
         textvariable=path_var, 
         font=("Consolas", 8), 
-        bg="#1e1e2e", 
+        bg="#252538", 
         fg="#a6adc8", 
-        wraplength=480, 
+        wraplength=460, 
         justify=tk.LEFT
     )
-    path_label.pack(anchor="w", padx=15, pady=(2, 8))
+    path_label.pack(anchor="w", padx=15, pady=(2, 10))
     
     def refresh_status():
         registered, reg_path = check_registration_status()
