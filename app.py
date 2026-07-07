@@ -395,7 +395,7 @@ def show_url_gui(url):
             break
     root.title(f"{proto_received} URL Handler")
     root.configure(bg="#1e1e2e")
-    center_window(root, 600, 170)
+    center_window(root, 600, 195)
     root.resizable(False, False)
 
     tk.Label(
@@ -423,11 +423,13 @@ def show_url_gui(url):
     )
     entry.pack(padx=25, pady=5)
 
+    copy_status_var = tk.StringVar()
+
     def copy_to_clipboard():
         root.clipboard_clear()
         root.clipboard_append(url)
+        copy_status_var.set("Copied!")
         root.update()
-        messagebox.showinfo("Success", "URL copied to clipboard!")
 
     btn_copy = tk.Button(
         root, 
@@ -444,7 +446,16 @@ def show_url_gui(url):
         height=1
     )
     make_button_interactive(btn_copy, "#a6e3a1", "#b4befe", "#11111b", "#11111b")
-    btn_copy.pack(pady=15)
+    btn_copy.pack(pady=(15, 6))
+
+    tk.Label(
+        root,
+        textvariable=copy_status_var,
+        font=("Segoe UI", 10, "bold"),
+        bg="#1e1e2e",
+        fg="#a6e3a1",
+        height=1
+    ).pack()
     
     root.mainloop()
 
